@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Sincronizar Capacitor (Unir Web y Android)
         run: npx cap sync android
