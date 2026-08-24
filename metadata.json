@@ -1,0 +1,6 @@
+{
+  "name": "Casa Campo",
+  "description": "Sistema de punto de venta e inventario con inteligencia artificial integrada.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
