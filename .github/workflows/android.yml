@@ -34,6 +34,11 @@ jobs:
       - name: Sincronizar Capacitor (Unir Web y Android)
         run: npx cap sync android
 
+      - name: Configurar Gradle (Versión Compatible)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
       - name: Compilar el archivo APK
         run: |
           cd android
