@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Permite compilar manualmente dando clic a un botón
+
+jobs:
+  build:
+    name: Compilar APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Obtener el código
+        uses: actions/checkout@v4
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias web
+        run: npm install
+
+      - name: Construir aplicación web
+        run: npm run build
+
+      - name: Preparar Java (necesario para Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Sincronizar Capacitor (Unir Web y Android)
+        run: npx cap sync android
+
+      - name: Compilar el archivo APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Subir APK para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: CasaCampo-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk

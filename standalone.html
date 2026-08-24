@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casa Campo POS - Standalone</title>
+    <!-- Tailwind CSS desde CDN para no requerir instalación -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col">
+    
+    <!-- Barra Superior -->
+    <header class="bg-white p-4 shadow-sm flex justify-between items-center z-10 relative">
+        <h1 class="font-black text-xl text-indigo-700 tracking-tight">Casa Campo POS</h1>
+        <nav class="flex gap-2">
+            <button id="btn-mostrador" onclick="setTab('mostrador')" class="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg transition-colors">Mostrador</button>
+            <button id="btn-inventario" onclick="setTab('inventario')" class="px-4 py-2 text-slate-600 hover:bg-slate-50 font-bold rounded-lg transition-colors">Inventario</button>
+        </nav>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main id="app-content" class="flex-1 overflow-auto p-4 md:p-6 max-w-6xl mx-auto w-full">
+        <!-- El contenido se inyecta por JavaScript -->
+    </main>
+
+    <script>
+        // --- ESTADO DE LA APLICACIÓN (Se guarda en la memoria del navegador) ---
+        let tab = 'mostrador';
+        let productos = JSON.parse(localStorage.getItem('cc_productos')) || [
+            { id: '1', nombre: 'Tomate Saladette', precioVenta: 25.50, stock: 10 },
+            { id: '2', nombre: 'Aguacate Hass', precioVenta: 65.00, stock: 5 }
+        ];
+        let carrito = [];
+
+        // Guarda en el navegador local (Local Storage)
+        function saveState() {
+            localStorage.setItem('cc_productos', JSON.stringify(productos));
+            render();
+        }
+
+        // Cambia de pestaña
+        function setTab(newTab) {
+            tab = newTab;
+            // Actualizar botones
+            document.getElementById('btn-mostrador').className = tab === 'mostrador' ? 'px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg transition-colors' : 'px-4 py-2 text-slate-600 hover:bg-slate-50 font-bold rounded-lg transition-colors';
+            document.getElementById('btn-inventario').className = tab === 'inventario' ? 'px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg transition-colors' : 'px-4 py-2 text-slate-600 hover:bg-slate-50 font-bold rounded-lg transition-colors';
+            render();
+        }
+
+        // --- MOTOR DE DIBUJO (Renderizado) ---
+        function render() {
+            const main = document.getElementById('app-content');
+            
+            if (tab === 'mostrador') {
+                main.innerHTML = `
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Lista de Productos -->
+                        <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                            <h2 class="font-bold text-lg mb-4 text-slate-800">Productos Disponibles</h2>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                ${productos.map(p => `
+                                    <button onclick="addToCart('${p.id}')" class="p-4 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 text-left transition-all group">
+                                        <div class="font-bold text-slate-800 group-hover:text-indigo-700">${p.nombre}</div>
+                                        <div class="text-indigo-600 font-black mt-1">$${p.precioVenta.toFixed(2)}/kg</div>
+                                        <div class="text-xs text-slate-500 mt-2 font-medium">Stock: ${p.stock}kg</div>
+                                    </button>
+                                `).join('')}
+                                ${productos.length === 0 ? '<p class="text-slate-500 col-span-full py-8 text-center">No hay productos. Ve a inventario para agregar.</p>' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Ticket / Carrito -->
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[calc(100vh-140px)] sticky top-4">
+                            <h2 class="font-bold text-lg mb-4 text-slate-800">Ticket Actual</h2>
+                            
+                            <div class="flex-1 overflow-auto">
+                                ${carrito.length === 0 ? '<div class="h-full flex items-center justify-center text-slate-400 font-medium">El ticket está vacío</div>' : `
+                                    <ul class="space-y-3">
+                                        ${carrito.map((c, i) => `
+                                            <li class="flex justify-between items-start pb-3 border-b border-slate-100">
+                                                <div>
+                                                    <div class="font-bold text-sm text-slate-800">${c.nombre}</div>
+                                                    <div class="text-xs text-slate-500">${c.kg}kg x $${c.precio.toFixed(2)}</div>
+                                                </div>
+                                                <div class="flex items-center gap-3">
+                                                    <span class="font-black text-slate-800">$${(c.kg * c.precio).toFixed(2)}</span>
+                                                    <button onclick="removeFromCart(${i})" class="w-6 h-6 rounded-full bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100">&times;</button>
+                                                </div>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                `}
+                            </div>
+                            
+                            <div class="pt-4 border-t border-slate-100 mt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="font-bold text-slate-500">Total</span>
+                                    <span class="text-3xl font-black text-indigo-700">$${carrito.reduce((acc, c) => acc + (c.kg * c.precio), 0).toFixed(2)}</span>
+                                </div>
+                                <button onclick="cobrar()" class="w-full py-4 bg-indigo-600 text-white font-black rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-transform active:scale-[0.98] disabled:opacity-50" ${carrito.length === 0 ? 'disabled' : ''}>
+                                    Cobrar Ticket
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'inventario') {
+                main.innerHTML = `
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                            <h2 class="font-bold text-lg mb-4 text-slate-800">Agregar Producto</h2>
+                            <form onsubmit="addProduct(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <input id="p-nombre" required placeholder="Nombre del producto" class="sm:col-span-2 border border-slate-300 p-3 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-medium">
+                                <input id="p-precio" type="number" step="0.01" required placeholder="Precio ($)" class="border border-slate-300 p-3 rounded-xl focus:outline-none focus:border-indigo-500 font-medium">
+                                <input id="p-stock" type="number" step="0.01" required placeholder="Stock (kg)" class="border border-slate-300 p-3 rounded-xl focus:outline-none focus:border-indigo-500 font-medium">
+                                <button type="submit" class="sm:col-span-4 bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">Guardar Producto</button>
+                            </form>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-4 font-bold text-xs text-slate-500 uppercase tracking-wider">Producto</th>
+                                        <th class="p-4 font-bold text-xs text-slate-500 uppercase tracking-wider">Precio Venta</th>
+                                        <th class="p-4 font-bold text-xs text-slate-500 uppercase tracking-wider">Stock</th>
+                                        <th class="p-4 font-bold text-xs text-slate-500 uppercase tracking-wider text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    ${productos.map(p => `
+                                        <tr class="hover:bg-slate-50 transition-colors">
+                                            <td class="p-4 font-bold text-slate-800">${p.nombre}</td>
+                                            <td class="p-4 font-bold text-indigo-600">$${p.precioVenta.toFixed(2)}</td>
+                                            <td class="p-4 font-medium text-slate-600">${p.stock}kg</td>
+                                            <td class="p-4 text-right">
+                                                <button onclick="deleteProduct('${p.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-bold text-xs hover:bg-red-100 transition-colors">Eliminar</button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${productos.length === 0 ? '<tr><td colspan="4" class="p-8 text-center text-slate-500">No hay productos registrados</td></tr>' : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- LÓGICA DE NEGOCIO ---
+        function addProduct(e) {
+            e.preventDefault();
+            productos.push({
+                id: Date.now().toString(),
+                nombre: document.getElementById('p-nombre').value.trim(),
+                precioVenta: parseFloat(document.getElementById('p-precio').value),
+                stock: parseFloat(document.getElementById('p-stock').value)
+            });
+            saveState();
+        }
+
+        function deleteProduct(id) {
+            if(confirm('¿Seguro que quieres eliminar este producto?')) {
+                productos = productos.filter(p => p.id !== id);
+                // Quitar del carrito si estaba ahí
+                carrito = carrito.filter(c => c.id !== id);
+                saveState();
+            }
+        }
+
+        function addToCart(id) {
+            const prod = productos.find(p => p.id === id);
+            const input = prompt(`¿Cuántos kilogramos de ${prod.nombre} deseas agregar?`, "1");
+            
+            if (input !== null) {
+                const kg = parseFloat(input);
+                if (isNaN(kg) || kg <= 0) return;
+                
+                if (kg > prod.stock) {
+                    alert(\`Stock insuficiente. Solo tienes \${prod.stock}kg de \${prod.nombre}.\`);
+                    return;
+                }
+                
+                // Si ya existe en el carrito, sumar kilos
+                const existing = carrito.find(c => c.id === id);
+                if (existing) {
+                    if ((existing.kg + kg) > prod.stock) {
+                        alert('No hay suficiente stock para sumar esa cantidad.');
+                        return;
+                    }
+                    existing.kg += kg;
+                } else {
+                    carrito.push({
+                        id: prod.id,
+                        nombre: prod.nombre,
+                        precio: prod.precioVenta,
+                        kg: kg
+                    });
+                }
+                render();
+            }
+        }
+
+        function removeFromCart(index) {
+            carrito.splice(index, 1);
+            render();
+        }
+
+        function cobrar() {
+            if(carrito.length === 0) return;
+            
+            // Reducir stock del inventario
+            carrito.forEach(item => {
+                const prod = productos.find(p => p.id === item.id);
+                if(prod) {
+                    prod.stock = Math.max(0, prod.stock - item.kg);
+                }
+            });
+            
+            alert('¡Venta cobrada con éxito! El inventario ha sido actualizado.');
+            carrito = [];
+            saveState();
+        }
+
+        // Iniciar la aplicación
+        render();
+    </script>
+</body>
+</html>
