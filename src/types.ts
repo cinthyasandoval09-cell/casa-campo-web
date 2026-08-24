@@ -52,3 +52,27 @@ export interface BoxType {
   color: string;
   label: string;
 }
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  nombre: string;
+  rol: 'admin' | 'cliente' | 'repartidor';
+  telefono?: string;
+}
+
+export interface Pedido {
+  id: string;
+  clienteId: string;
+  clienteNombre: string;
+  clienteTelefono?: string;
+  repartidorId?: string;
+  repartidorNombre?: string;
+  fecha: number;
+  items: SaleItem[];
+  total: number;
+  ganancia: number;
+  totalGramos: number;
+  estado: 'pendiente' | 'preparando' | 'en camino' | 'entregado';
+  direccion: string;
+}

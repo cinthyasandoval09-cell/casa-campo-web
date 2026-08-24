@@ -137,7 +137,11 @@ export function ElenaAI({ productos, ventas, gastos, mermas, setMermaForm, onAdd
         }
       };
 
-      const response = await fetch('/api/chat', {
+      // Si la app está en Android (Capacitor) necesita saber dónde está el servidor de Elena en internet
+      const isAndroid = window.location.protocol === 'capacitor:' || window.location.protocol === 'http:' && window.location.hostname === 'localhost';
+      const apiUrl = isAndroid ? 'https://ais-pre-xanexn2yubqkcokrvsssiq-709245110971.us-east1.run.app/api/chat' : '/api/chat';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

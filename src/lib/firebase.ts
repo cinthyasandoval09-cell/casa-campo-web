@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, enableIndexedDbPersistence, onSnapshot, collection, doc, updateDoc, increment, addDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { getAuth, signInAnonymously } from "firebase/auth";
+import { getFirestore, enableIndexedDbPersistence, onSnapshot, collection, doc, updateDoc, increment, addDoc, setDoc, deleteDoc, getDoc, query, where, orderBy } from "firebase/firestore";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDiwQa5Nx3tzs6mDCcgeM45yGGv6lmMS24",
@@ -25,8 +25,4 @@ enableIndexedDbPersistence(db).catch((err) => {
   }
 });
 
-signInAnonymously(auth).catch((error) => {
-  console.error("Anonymous auth failed", error);
-});
-
-export { db, auth, onSnapshot, collection, doc, updateDoc, increment, addDoc, setDoc, deleteDoc };
+export { db, auth, onSnapshot, collection, doc, updateDoc, increment, addDoc, setDoc, deleteDoc, getDoc, query, where, orderBy, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged };
